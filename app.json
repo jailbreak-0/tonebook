@@ -4,20 +4,26 @@
     "slug": "tonebook",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/tonebook-icon-appStore.png",
     "scheme": "tonebook",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/images/tonebook-icon-appStore.png"
     },
     "android": {
+      "icon": "./assets/images/tonebook-icon-playStore.png",
       "package": "com.nyamek.tonebook",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "notification": {
+        "icon": "./assets/images/tonebook-notif-icon.png",
+        "color": "#ff9f1c"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
