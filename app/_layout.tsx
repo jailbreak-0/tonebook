@@ -24,7 +24,6 @@ function RootNavigation() {
     <ThemeProvider value={resolvedScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack
         screenOptions={{
-          headerBackTitleVisible: false,
           headerBackButtonDisplayMode: "minimal",
         }}
       >

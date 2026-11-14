@@ -294,7 +294,7 @@ function SignalChainFlow({
   accentColor?: string;
 }) {
   const [swapSourceId, setSwapSourceId] = useState<string | null>(null);
-  const swapPulse = useRef(new Animated.Value(0)).current;
+  const swapPulse = useMemo(() => new Animated.Value(0), []);
 
   useEffect(() => {
     let animation: Animated.CompositeAnimation | null = null;
@@ -497,33 +497,32 @@ export default function ToneEditorScreen({ initialTone }: Props) {
   );
   const [saving, setSaving] = useState(false);
   const [showChainTooltip, setShowChainTooltip] = useState(false);
-  const chainTooltipOpacity = useRef(new Animated.Value(0)).current;
-  const chainTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const chainTooltipOpacity = useMemo(() => new Animated.Value(0), []);
+  const chainTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tagInput, setTagInput] = useState("");
 
-  // Common suggested tags
-  const suggestedTags = [
-    "Clean",
-    "Crunch",
-    "Lead",
-    "Blues",
-    "Rock",
-    "Metal",
-    "Jazz",
-    "Folk",
-    "Pop",
-    "Funk",
-    "Ambient",
-    "Experimental",
-    "Bright",
-    "Warm",
-    "Aggressive",
-    "Smooth",
-    "Vintage",
-    "Modern",
-  ];
-
   const filteredTagSuggestions = useMemo(() => {
+    // Common suggested tags
+    const suggestedTags = [
+      "Clean",
+      "Crunch",
+      "Lead",
+      "Blues",
+      "Rock",
+      "Metal",
+      "Jazz",
+      "Folk",
+      "Pop",
+      "Funk",
+      "Ambient",
+      "Experimental",
+      "Bright",
+      "Warm",
+      "Aggressive",
+      "Smooth",
+      "Vintage",
+      "Modern",
+    ];
     const existingTagsSet = new Set(tone.tags.map((tag) => tag.toLowerCase()));
     const trimmedInput = tagInput.trim().toLowerCase();
 
@@ -594,7 +593,22 @@ export default function ToneEditorScreen({ initialTone }: Props) {
 
   const chainBlocks = useMemo<ChainBlock[]>(() => {
     const pedalById = new Map(tone.pedals.map((pedal) => [pedal.id, pedal]));
-    return chainOrder
+    const pedalIds = tone.pedals.map((pedal) => pedal.id);
+    // Reconcile the user's preferred order with the current pedals: keep valid
+    // entries, append any pedals that aren't ordered yet, and always include
+    // the AMP and CAB endpoints.
+    const ordered = chainOrder.filter(
+      (id) => pedalIds.includes(id) || id === AMP_BLOCK_ID || id === CAB_BLOCK_ID,
+    );
+    const missingPedals = pedalIds.filter((id) => !ordered.includes(id));
+    const next = [...ordered, ...missingPedals];
+    if (!next.includes(AMP_BLOCK_ID)) {
+      next.push(AMP_BLOCK_ID);
+    }
+    if (!next.includes(CAB_BLOCK_ID)) {
+      next.push(CAB_BLOCK_ID);
+    }
+    return next
       .map((id) => {
         if (id === AMP_BLOCK_ID) {
           return { id: AMP_BLOCK_ID, kind: "amp" } as const;
@@ -611,36 +625,12 @@ export default function ToneEditorScreen({ initialTone }: Props) {
       .filter((item): item is ChainBlock => item !== null);
   }, [chainOrder, tone.pedals]);
 
-  useEffect(() => {
-    if (!selectedBlockId) {
-      setSelectedBlockId(tone.pedals[0]?.id ?? AMP_BLOCK_ID);
-      return;
+  const resolvedBlockId = useMemo(() => {
+    if (selectedBlockId && chainBlocks.some((item) => item.id === selectedBlockId)) {
+      return selectedBlockId;
     }
-
-    const validIds = new Set(chainBlocks.map((item) => item.id));
-    if (!validIds.has(selectedBlockId)) {
-      setSelectedBlockId(tone.pedals[0]?.id ?? AMP_BLOCK_ID);
-    }
-  }, [chainBlocks, selectedBlockId, tone.pedals]);
-
-  useEffect(() => {
-    setChainOrder((prev) => {
-      const pedalIds = tone.pedals.map((pedal) => pedal.id);
-      const kept = prev.filter(
-        (id) =>
-          pedalIds.includes(id) || id === AMP_BLOCK_ID || id === CAB_BLOCK_ID,
-      );
-      const missingPedals = pedalIds.filter((id) => !kept.includes(id));
-      const next = [...kept, ...missingPedals];
-      if (!next.includes(AMP_BLOCK_ID)) {
-        next.push(AMP_BLOCK_ID);
-      }
-      if (!next.includes(CAB_BLOCK_ID)) {
-        next.push(CAB_BLOCK_ID);
-      }
-      return next;
-    });
-  }, [tone.pedals]);
+    return tone.pedals[0]?.id ?? AMP_BLOCK_ID;
+  }, [selectedBlockId, chainBlocks, tone.pedals]);
 
   const displayChainTooltip = () => {
     // Clear any existing timeout
@@ -674,8 +664,9 @@ export default function ToneEditorScreen({ initialTone }: Props) {
 
   useEffect(() => {
     return () => {
-      if (chainTooltipTimeoutRef.current) {
-        clearTimeout(chainTooltipTimeoutRef.current);
+      const timeoutId = chainTooltipTimeoutRef.current;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, []);
@@ -874,7 +865,7 @@ export default function ToneEditorScreen({ initialTone }: Props) {
 
             <SignalChainFlow
               blocks={chainBlocks}
-              selectedBlockId={selectedBlockId}
+              selectedBlockId={resolvedBlockId}
               accentColor={themed.accent}
               onSelect={(block) => {
                 setSelectedBlockId(block.id);
@@ -915,7 +906,7 @@ export default function ToneEditorScreen({ initialTone }: Props) {
               ))}
             </ScrollView>
 
-            {selectedBlockId ? (
+            {resolvedBlockId ? (
               <View
                 style={[
                   styles.settingsCard,
@@ -927,7 +918,7 @@ export default function ToneEditorScreen({ initialTone }: Props) {
               >
                 {(() => {
                   const selectedBlock = chainBlocks.find(
-                    (block) => block.id === selectedBlockId,
+                    (block) => block.id === resolvedBlockId,
                   );
                   if (!selectedBlock) {
                     return null;

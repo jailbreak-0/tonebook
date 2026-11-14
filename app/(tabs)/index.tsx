@@ -1,14 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useThemePreference } from "@/hooks/theme-preference";
@@ -28,7 +21,7 @@ export default function HomeScreen() {
   const [activeTag, setActiveTag] = useState<string>("all");
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-  const listRef = React.useRef<ScrollView>(null);
+  const listRef = React.useRef<ScrollViewInstance>(null);
 
   const isDark = resolvedScheme === "dark";
   const themed = {

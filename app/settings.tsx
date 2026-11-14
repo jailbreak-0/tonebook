@@ -1,5 +1,4 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,7 +6,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemePreference, useThemePreference } from "@/hooks/theme-preference";
 
 export default function SettingsScreen() {
-  const router = useRouter();
   const { preference, resolvedScheme, setPreference } = useThemePreference();
 
   const isDark = resolvedScheme === "dark";
@@ -21,7 +19,7 @@ export default function SettingsScreen() {
     activeOptionBg: isDark ? "#262114" : "#f5ecd2",
   };
 
-  const options: Array<{ label: string; value: ThemePreference }> = [
+  const options: { label: string; value: ThemePreference }[] = [
     { label: "Device", value: "device" },
     { label: "Dark", value: "dark" },
     { label: "Light", value: "light" },
