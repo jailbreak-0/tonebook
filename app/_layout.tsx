@@ -13,6 +13,8 @@ import {
     useThemePreference,
 } from "@/hooks/theme-preference";
 
+
+
 export const unstable_settings = {
   anchor: "(tabs)",
 };
@@ -45,6 +47,7 @@ function RootNavigation() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+
       <ThemePreferenceProvider>
         <RootNavigation />
       </ThemePreferenceProvider>

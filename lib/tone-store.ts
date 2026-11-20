@@ -111,14 +111,14 @@ export function formatToneAsText(tone: TonePreset): string {
       const params = Object.entries(pedal.parameters)
         .map(([key, value]) => `${key}: ${value}`)
         .join(", ");
-      return `${index + 1}. ${pedal.name || pedal.type} (${pedal.type})${pedalMode}${params ? ` - ${params}` : ""}`;
+      return `${index + 1}. ${pedal.effectName || pedal.name || pedal.type} (${pedal.type})${pedalMode}${params ? ` - ${params}` : ""}`;
     })
     .join("\n");
 
   const amp = tone.ampSettings;
-  const ampLine = `Name ${amp.name || "Default Amp"} | Gain ${amp.gain} | Bass ${amp.bass} | Mid ${amp.mid} | Treble ${amp.treble} | Presence ${amp.presence} | Master ${amp.master}`;
+  const ampLine = `Effect ${amp.effectName ?? "-"} | Gain ${amp.gain} | Bass ${amp.bass} | Mid ${amp.mid} | Treble ${amp.treble} | Presence ${amp.presence} | Master ${amp.master}`;
   const cab = tone.cabSettings;
-  const cabLine = `Name ${cab.name || "Default Cab"} | lowCut ${cab.lowCut} Hz | highCut ${cab.highCut} kHz | resonance ${cab.resonance} | level ${cab.level}`;
+  const cabLine = `Effect ${cab.effectName ?? "-"} | lowCut ${cab.lowCut} Hz | highCut ${cab.highCut} kHz | resonance ${cab.resonance} | level ${cab.level}`;
 
   return [
     `Tone: ${tone.name}`,
@@ -134,6 +134,11 @@ export function formatToneAsText(tone: TonePreset): string {
     "Cab Settings:",
     cabLine,
     "",
+    tone.multiFxPedal
+      ? `Multi FX Pedal: ${tone.multiFxPedal}`
+      : null,
+    "",
+
     `Updated: ${new Date(tone.updatedAt).toLocaleString()}`,
   ]
     .filter(Boolean)

@@ -23,7 +23,16 @@ import {
 
 import { useThemePreference } from "@/hooks/theme-preference";
 import { deleteTonePreset, getTonePresetById } from "@/lib/tone-store";
-import { Pedal, TonePreset } from "@/types/tone";
+import { shareTone } from "@/lib/tone-share";
+import {
+  InstrumentType,
+  multiFxCabOptions,
+  multiFxEffectOptions,
+  multiFxPedalOptions,
+  MultiFxPedalType,
+  Pedal,
+  TonePreset,
+} from "@/types/tone";
 
 const AMP_BLOCK_ID = "__amp__";
 const CAB_BLOCK_ID = "__cab__";
@@ -238,6 +247,13 @@ export default function ToneDetailScreen() {
     { kind: "out", id: "__out__" },
   ];
 
+  const multiFxPedalType = (tone.multiFxPedal ??
+    multiFxPedalOptions[0]) as MultiFxPedalType;
+  const instrumentType = (tone.instrumentType ?? "Guitar") as InstrumentType;
+  const ampEffectFallback = multiFxEffectOptions[multiFxPedalType][0];
+  const cabEffectFallback =
+    multiFxCabOptions[multiFxPedalType][instrumentType][0];
+
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: themed.bg }]}>
       <Stack.Screen
@@ -281,6 +297,28 @@ export default function ToneDetailScreen() {
             >
               <Text style={[styles.menuText, { color: themed.title }]}>
                 Edit
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuOpen(false);
+                void shareTone(tone, "text");
+              }}
+            >
+              <Text style={[styles.menuText, { color: themed.title }]}>
+                Share as Text
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuOpen(false);
+                void shareTone(tone, "json");
+              }}
+            >
+              <Text style={[styles.menuText, { color: themed.title }]}>
+                Share as JSON
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -402,6 +440,11 @@ export default function ToneDetailScreen() {
                     Mod Type: {selectedBlock.pedal.modulationType}
                   </Text>
                 ) : null}
+                {selectedBlock.pedal.effectName ? (
+                  <Text style={[styles.settingsMeta, { color: themed.text }]}>
+                    Effect: {selectedBlock.pedal.effectName}
+                  </Text>
+                ) : null}
                 {Object.entries(selectedBlock.pedal.parameters).map(
                   ([key, value]) => (
                     <View
@@ -426,10 +469,12 @@ export default function ToneDetailScreen() {
                   AMP
                 </Text>
                 <Text style={[styles.settingsMeta, { color: themed.text }]}>
-                  Name: {tone.ampSettings.name || "Default Amp"}
+                  Effect: {tone.ampSettings.effectName ?? ampEffectFallback}
                 </Text>
                 {Object.entries(tone.ampSettings)
-                  .filter(([key]) => key !== "name")
+                  .filter(
+                    ([key]) => key !== "name" && key !== "effectName",
+                  )
                   .map(([key, value]) => (
                     <View key={`amp-${key}`} style={styles.paramRow}>
                       <Text style={[styles.paramKey, { color: themed.text }]}>
@@ -449,10 +494,12 @@ export default function ToneDetailScreen() {
                   CAB
                 </Text>
                 <Text style={[styles.settingsMeta, { color: themed.text }]}>
-                  Name: {tone.cabSettings.name || "Default Cab"}
+                  Effect: {tone.cabSettings.effectName ?? cabEffectFallback}
                 </Text>
                 {Object.entries(tone.cabSettings)
-                  .filter(([key]) => key !== "name")
+                  .filter(
+                    ([key]) => key !== "name" && key !== "effectName",
+                  )
                   .map(([key, value]) => (
                     <View key={`cab-${key}`} style={styles.paramRow}>
                       <Text style={[styles.paramKey, { color: themed.text }]}>
@@ -477,6 +524,17 @@ export default function ToneDetailScreen() {
             Tap a block to view settings.
           </Text>
         )}
+        {tone.multiFxPedal ? (
+          <View style={styles.settingsContent}>
+            <Text style={[styles.sectionTitle, { color: themed.accent }]}>
+              Multi FX Pedal
+            </Text>
+            <Text style={[styles.settingsName, { color: themed.title }]}>
+              {tone.multiFxPedal}
+            </Text>
+          </View>
+        ) : null}
+
       </ScrollView>
     </SafeAreaView>
   );

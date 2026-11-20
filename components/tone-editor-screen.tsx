@@ -19,17 +19,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useThemePreference } from "@/hooks/theme-preference";
+
 import { upsertTonePreset } from "@/lib/tone-store";
 import {
   createEmptyTone,
   createPedal,
-  defaultAmpSettings,
   defaultCabSettings,
   EQType,
   eqTypeOptions,
   getEQParameterLabels,
   getEQParametersByType,
+  InstrumentType,
+  instrumentOptions,
   ModulationType,
+  MultiFxPedalType,
+  multiFxCabOptions,
+  multiFxEffectOptions,
+  multiFxPedalOptions,
+
   modulationTypeOptions,
   Pedal,
   pedalTypeOptions,
@@ -109,7 +116,7 @@ function Dropdown({
         />
       </Pressable>
       {expanded && (
-        <View style={styles.dropdownMenu}>
+        <View style={[styles.dropdownMenu, styles.dropdownMenuOverlay]}>
           {options.map((option) => (
             <Pressable
               key={option}
@@ -472,6 +479,7 @@ function SignalChainFlow({
 export default function ToneEditorScreen({ initialTone }: Props) {
   const router = useRouter();
   const { resolvedScheme } = useThemePreference();
+
   const isDark = resolvedScheme === "dark";
   const themed = {
     bg: isDark ? "#0e0e0e" : "#f7f8fb",
@@ -553,6 +561,14 @@ export default function ToneEditorScreen({ initialTone }: Props) {
   const updateTone = (next: Partial<TonePreset>) => {
     setTone((prev) => ({ ...prev, ...next }));
   };
+
+  const multiFxEffectOptionsForPedal =
+    multiFxEffectOptions[tone.multiFxPedal ?? multiFxPedalOptions[0]];
+
+  const multiFxCabOptionsForInstrument =
+    multiFxCabOptions[tone.multiFxPedal ?? multiFxPedalOptions[0]][
+      tone.instrumentType ?? "Guitar"
+    ];
 
   const addPedal = (type: (typeof pedalTypeOptions)[number]) => {
     setTone((prev) => {
@@ -734,6 +750,18 @@ export default function ToneEditorScreen({ initialTone }: Props) {
                 },
               ]}
             />
+            <Dropdown
+              label="Instrument"
+              value={tone.instrumentType ?? "Guitar"}
+              options={instrumentOptions}
+              onChange={(next) =>
+                updateTone({
+                  instrumentType: next as InstrumentType,
+                  cabSettings: { ...tone.cabSettings, effectName: undefined },
+                })
+              }
+              accentColor={themed.accent}
+            />
             <TextInput
               value={tone.description ?? ""}
               onChangeText={(description) => updateTone({ description })}
@@ -831,6 +859,33 @@ export default function ToneEditorScreen({ initialTone }: Props) {
               ) : null}
             </View>
           </View>
+          <View
+            style={[
+              styles.sectionCard,
+              { backgroundColor: themed.card, borderColor: themed.border },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: themed.accent }]}>
+              Multi FX Pedal
+            </Text>
+            <Dropdown
+              label="Multi FX Pedal"
+              value={tone.multiFxPedal ?? multiFxPedalOptions[0]}
+              options={multiFxPedalOptions}
+              onChange={(next) => {
+                updateTone({
+                  multiFxPedal: next as MultiFxPedalType,
+                  ampSettings: { ...tone.ampSettings, effectName: undefined },
+                  cabSettings: { ...tone.cabSettings, effectName: undefined },
+                  pedals: tone.pedals.map((pedal) => ({
+                    ...pedal,
+                    effectName: undefined,
+                  })),
+                });
+              }}
+              accentColor={themed.accent}
+            />
+          </View>
 
           <View
             style={[
@@ -839,6 +894,7 @@ export default function ToneEditorScreen({ initialTone }: Props) {
             ]}
           >
             <View style={styles.chainHeaderRow}>
+
               <Text style={[styles.sectionTitle, { color: themed.accent }]}>
                 Pedal Chain
               </Text>
@@ -952,74 +1008,48 @@ export default function ToneEditorScreen({ initialTone }: Props) {
                         </View>
 
                         {selectedPedal.type === "EQ" ? (
-                          <>
-                            <Dropdown
-                              label="EQ Type"
-                              value={selectedPedal.eqType ?? "3 band"}
-                              options={eqTypeOptions}
-                              accentColor={themed.accent}
-                              onChange={(eqType) => {
-                                const newParams = getEQParametersByType(
-                                  eqType as EQType,
-                                );
-                                updatePedal(selectedPedal.id, {
-                                  eqType: eqType as EQType,
-                                  parameters: newParams,
-                                });
-                              }}
-                            />
-                          </>
+                          <Dropdown
+                            label="EQ Type"
+                            value={selectedPedal.eqType ?? "3 band"}
+                            options={eqTypeOptions}
+                            accentColor={themed.accent}
+                            onChange={(eqType) => {
+                              const newParams = getEQParametersByType(
+                                eqType as EQType,
+                              );
+                              updatePedal(selectedPedal.id, {
+                                eqType: eqType as EQType,
+                                parameters: newParams,
+                              });
+                            }}
+                          />
                         ) : selectedPedal.type === "Modulation" ? (
-                          <>
-                            <Dropdown
-                              label="Modulation Type"
-                              value={selectedPedal.modulationType ?? "Chorus"}
-                              options={modulationTypeOptions}
-                              accentColor={themed.accent}
-                              onChange={(modulationType) => {
-                                updatePedal(selectedPedal.id, {
-                                  modulationType:
-                                    modulationType as ModulationType,
-                                });
-                              }}
-                            />
-                            <TextInput
-                              value={selectedPedal.name ?? ""}
-                              onChangeText={(name) =>
-                                updatePedal(selectedPedal.id, { name })
-                              }
-                              placeholder="Custom name (optional)"
-                              placeholderTextColor={themed.placeholder}
-                              style={[
-                                styles.pedalNameInput,
-                                {
-                                  backgroundColor: themed.inputBg,
-                                  borderColor: themed.inputBorder,
-                                  color: themed.textPrimary,
-                                },
-                              ]}
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <TextInput
-                              value={selectedPedal.name ?? ""}
-                              onChangeText={(name) =>
-                                updatePedal(selectedPedal.id, { name })
-                              }
-                              placeholder="Custom pedal name"
-                              placeholderTextColor={themed.placeholder}
-                              style={[
-                                styles.pedalNameInput,
-                                {
-                                  backgroundColor: themed.inputBg,
-                                  borderColor: themed.inputBorder,
-                                  color: themed.textPrimary,
-                                },
-                              ]}
-                            />
-                          </>
-                        )}
+                          <Dropdown
+                            label="Modulation Type"
+                            value={selectedPedal.modulationType ?? "Chorus"}
+                            options={modulationTypeOptions}
+                            accentColor={themed.accent}
+                            onChange={(modulationType) => {
+                              updatePedal(selectedPedal.id, {
+                                modulationType:
+                                  modulationType as ModulationType,
+                              });
+                            }}
+                          />
+                        ) : null}
+
+                        <Dropdown
+                          label="Effect Name"
+                          value={
+                            selectedPedal.effectName ??
+                            multiFxEffectOptionsForPedal[0]
+                          }
+                          options={multiFxEffectOptionsForPedal}
+                          onChange={(next) =>
+                            updatePedal(selectedPedal.id, { effectName: next })
+                          }
+                          accentColor={themed.accent}
+                        />
 
                         {selectedPedal.type === "EQ" ? (
                           getEQParameterLabels(
@@ -1098,39 +1128,31 @@ export default function ToneEditorScreen({ initialTone }: Props) {
                           </View>
                         </View>
 
-                        <TextInput
-                          value={tone.ampSettings.name ?? ""}
-                          onChangeText={(name) =>
+                        <Dropdown
+                          label="Effect Name"
+                          value={
+                            tone.ampSettings.effectName ??
+                            multiFxEffectOptionsForPedal[0]
+                          }
+                          options={multiFxEffectOptionsForPedal}
+                          onChange={(next) =>
                             updateTone({
                               ampSettings: {
                                 ...tone.ampSettings,
-                                name,
+                                effectName: next,
                               },
                             })
                           }
-                          placeholder="Set AMP name"
-                          placeholderTextColor={themed.placeholder}
-                          style={[
-                            styles.pedalNameInput,
-                            {
-                              backgroundColor: themed.inputBg,
-                              borderColor: themed.inputBorder,
-                              color: themed.textPrimary,
-                            },
-                          ]}
+                          accentColor={themed.accent}
                         />
 
-                        {(
-                          Object.keys(
-                            defaultAmpSettings,
-                          ) as (keyof typeof defaultAmpSettings)[]
-                        )
-                          .filter((key) => key !== "name")
-                          .map((key) => (
+                        {Object.entries(tone.ampSettings)
+                          .filter(([, value]) => typeof value === "number")
+                          .map(([key, value]) => (
                             <ParameterControl
                               key={`amp-${key}`}
                               label={key}
-                              value={tone.ampSettings[key]}
+                              value={value as number}
                               onChange={(next) =>
                                 updateTone({
                                   ampSettings: {
@@ -1166,26 +1188,22 @@ export default function ToneEditorScreen({ initialTone }: Props) {
                         </View>
                       </View>
 
-                      <TextInput
-                        value={tone.cabSettings.name ?? ""}
-                        onChangeText={(name) =>
+                      <Dropdown
+                        label="Effect Name"
+                        value={
+                          tone.cabSettings.effectName ??
+                          multiFxCabOptionsForInstrument[0]
+                        }
+                        options={multiFxCabOptionsForInstrument}
+                        onChange={(next) =>
                           updateTone({
                             cabSettings: {
                               ...tone.cabSettings,
-                              name,
+                              effectName: next,
                             },
                           })
                         }
-                        placeholder="Set CAB name"
-                        placeholderTextColor={themed.placeholder}
-                        style={[
-                          styles.pedalNameInput,
-                          {
-                            backgroundColor: themed.inputBg,
-                            borderColor: themed.inputBorder,
-                            color: themed.textPrimary,
-                          },
-                        ]}
+                        accentColor={themed.accent}
                       />
 
                       <ParameterControl
@@ -1627,6 +1645,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2c2c2c",
     overflow: "hidden",
+  },
+  dropdownMenuOverlay: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    marginTop: 4,
+    zIndex: 1000,
+    elevation: 24,
   },
   dropdownOption: {
     paddingHorizontal: 10,

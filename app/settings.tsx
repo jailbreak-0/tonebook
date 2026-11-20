@@ -1,12 +1,38 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemePreference, useThemePreference } from "@/hooks/theme-preference";
+import { shareAllTones } from "@/lib/tone-share";
+import { getTonePresets } from "@/lib/tone-store";
+
 
 export default function SettingsScreen() {
   const { preference, resolvedScheme, setPreference } = useThemePreference();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportAll = async () => {
+    if (exporting) {
+      return;
+    }
+    setExporting(true);
+    try {
+      const tones = await getTonePresets();
+      if (tones.length === 0) {
+        Alert.alert("Nothing to export", "Create a tone first.");
+        return;
+      }
+      await shareAllTones(tones);
+    } catch {
+      Alert.alert(
+        "Export failed",
+        "Something went wrong while exporting your tones.",
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const isDark = resolvedScheme === "dark";
   const themed = {
@@ -24,6 +50,7 @@ export default function SettingsScreen() {
     { label: "Dark", value: "dark" },
     { label: "Light", value: "light" },
   ];
+
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: themed.bg }]}>
@@ -76,6 +103,27 @@ export default function SettingsScreen() {
             );
           })}
         </View>
+        <View
+          style={[
+            styles.sectionCard,
+            { backgroundColor: themed.card, borderColor: themed.border },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: themed.title }]}>
+            Data
+          </Text>
+          <Pressable
+            style={[styles.option, { borderColor: themed.border }]}
+            onPress={handleExportAll}
+            disabled={exporting}
+          >
+            <Text style={[styles.optionText, { color: themed.text }]}>
+              {exporting ? "Exporting..." : "Export all tones"}
+            </Text>
+            <MaterialIcons name="share" size={17} color={themed.accent} />
+          </Pressable>
+        </View>
+
       </View>
     </SafeAreaView>
   );
