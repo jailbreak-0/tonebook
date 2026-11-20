@@ -2,9 +2,8 @@
 
 ToneBook is a mobile app for guitarists and bassists to collect, build, and share tone presets. Think of it as a notebook for your rig: save pedal chains, dial in amp and cab settings, tag tones by style, and export your whole library to share with bandmates or across devices.
 
-Built with **Expo (React Native)**, **TypeScript**, and **expo-router**, it runs on iOS, Android, and the web from a single codebase.
+Built with **Expo (React Native)**, **TypeScript**, and **expo-router**, it runs on iOS and Android from a single codebase. (iOS currently untested)
 
-> **Repo:** https://github.com/jailbreak-0/tonebook
 
 ---
 
